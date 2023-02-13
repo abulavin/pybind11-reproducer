@@ -1,43 +1,30 @@
+#include "Pet.hpp"
 #include <pybind11/pybind11.h>
-
-#define STRINGIFY(x) #x
-#define MACRO_STRINGIFY(x) STRINGIFY(x)
-
-int add(int i, int j) {
-    return i + j;
-}
 
 namespace py = pybind11;
 
+void reproducer() {
+  py::object dog_class = py::module_::import("cmake_example").attr("Dog");
+
+  py::object dog = dog_class("timmy");
+
+  auto dog_cpp = dog.cast<Pet>();
+
+  dog_cpp.bark();
+}
+
+#include "Dog.hpp"
+
 PYBIND11_MODULE(cmake_example, m) {
-    m.doc() = R"pbdoc(
-        Pybind11 example plugin
-        -----------------------
 
-        .. currentmodule:: cmake_example
+  py::class_<Pet>(m, "Pet")
+      .def(py::init<const std::string &>())
+      .def_readwrite("name", &Pet::name)
+      .def("bark", &Pet::bark);
 
-        .. autosummary::
-           :toctree: _generate
+  py::class_<Dog, Pet>(m, "Dog")
+      .def(py::init<const std::string &>())
+      .def("bark", &Dog::bark);
 
-           add
-           subtract
-    )pbdoc";
-
-    m.def("add", &add, R"pbdoc(
-        Add two numbers
-
-        Some other explanation about the add function.
-    )pbdoc");
-
-    m.def("subtract", [](int i, int j) { return i - j; }, R"pbdoc(
-        Subtract two numbers
-
-        Some other explanation about the subtract function.
-    )pbdoc");
-
-#ifdef VERSION_INFO
-    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
-#else
-    m.attr("__version__") = "dev";
-#endif
+  m.def("reproducer", &reproducer);
 }
